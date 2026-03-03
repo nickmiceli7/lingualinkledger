@@ -48,14 +48,6 @@
             style="@style/darkButton" />
 
         <Button
-            android:id="@+id/fingerprint_dp_button"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginBottom="12dp"
-            android:text="Fingerprint Data Package"
-            style="@style/darkButton" />
-
-        <Button
             android:id="@+id/send_dp_button"
             android:layout_width="match_parent"
             android:layout_height="48dp"

@@ -173,10 +173,7 @@ public class LinguaLinkLedger implements IPlugin {
 
         helpButton = mainView.findViewById(R.id.help_button);
         createEditButton = mainView.findViewById(R.id.create_edit_dp_button);
-        //fingerprintButton = mainView.findViewById(R.id.fingerprint_dp_button);
         sendButton = mainView.findViewById(R.id.send_dp_button);
-        // handle button clicks
-        // for now we are just displaying messages as a placeholder
 
         helpButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -195,14 +192,6 @@ public class LinguaLinkLedger implements IPlugin {
                 createOrEditDatapackage();
             }
         });
-
-//        fingerprintButton.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                // fingerprint data package functionality
-//                PromptForMSVFileSelection(v.getContext());
-//            }
-//        });
 
         sendButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -530,13 +519,6 @@ public class LinguaLinkLedger implements IPlugin {
         if (selectedMsvPath != null) {
             File msvFile = new File(selectedMsvPath);
             new SendDialog.Builder(getMapView()).addFile(msvFile).show();
-//            boolean moved = moveFile(msvFile, HASHED_PACKAGE_DIR);
-//
-//            if (moved) {
-//                Log.d("Move", "File moved successfully");
-//            } else {
-//                Log.e("Move", "Failed to move file");
-//            }
         } else {
             Toast.makeText(pluginContext, "No MSV file selected", Toast.LENGTH_SHORT).show();
         }
