@@ -12,6 +12,7 @@ import android.widget.Toast;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.WindowManager;
+import android.widget.EditText;
 import android.widget.PopupWindow;
 import com.atak.plugins.impl.PluginContextProvider;
 import com.atak.plugins.impl.PluginLayoutInflater;
@@ -46,6 +47,7 @@ import gov.tak.platform.marshal.MarshalManager;
 import com.atakmap.android.missionpackage.export.MissionPackageExportMarshal;
 import com.atakmap.android.missionpackage.export.MissionPackageExportWrapper;
 
+
 public class LinguaLinkLedger implements IPlugin {
 
     IServiceController serviceController;
@@ -58,7 +60,7 @@ public class LinguaLinkLedger implements IPlugin {
 
     private Button helpButton;
     private Button createEditButton;
-    private Button fingerprintButton;
+    //private Button fingerprintButton;
     private Button sendButton;
     private String selectedMsvPath; // Variable to store the selected MSV path
 
@@ -73,6 +75,27 @@ public class LinguaLinkLedger implements IPlugin {
 
     // Directory where sent data packages are stored
     final File SENT_PACKAGE_DIR = new File(TOOLS_DIR, "sent_packages");
+
+    // Add this inside the LinguaLinkLedger class
+    private class DataPackageMetadata {
+        String packageName;
+        String description;
+        String author;
+        double latitude;
+        double longitude;
+
+        public DataPackageMetadata(String packageName, String description, String author, double latitude, double longitude) {
+            this.packageName = packageName;
+            this.description = description;
+            this.author = author;
+            this.latitude = latitude;
+            this.longitude = longitude;
+        }
+
+        public boolean isValid() {
+            return packageName != null && !packageName.trim().isEmpty();
+        }
+    }
 
     public LinguaLinkLedger(IServiceController serviceController) {
         this.serviceController = serviceController;
@@ -150,7 +173,7 @@ public class LinguaLinkLedger implements IPlugin {
 
         helpButton = mainView.findViewById(R.id.help_button);
         createEditButton = mainView.findViewById(R.id.create_edit_dp_button);
-        fingerprintButton = mainView.findViewById(R.id.fingerprint_dp_button);
+        //fingerprintButton = mainView.findViewById(R.id.fingerprint_dp_button);
         sendButton = mainView.findViewById(R.id.send_dp_button);
         // handle button clicks
         // for now we are just displaying messages as a placeholder
@@ -166,28 +189,27 @@ public class LinguaLinkLedger implements IPlugin {
             @Override
             public void onClick(View v) {
                 // create/edit data package functionality
-                Toast.makeText(pluginContext, "Create/Edit Data Package clicked", Toast.LENGTH_SHORT).show();
+
 
                 // Allow the user to create or edit a data package
                 createOrEditDatapackage();
             }
         });
 
-        fingerprintButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // fingerprint data package functionality
-                PromptForMSVFileSelection(v.getContext());
-                Toast.makeText(pluginContext, "Fingerprint Data Package clicked", Toast.LENGTH_SHORT).show();
-            }
-        });
+//        fingerprintButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                // fingerprint data package functionality
+//                PromptForMSVFileSelection(v.getContext());
+//            }
+//        });
 
         sendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 // send data package functionality
-                packageToTak();
-                Toast.makeText(pluginContext, "Send Data Package clicked", Toast.LENGTH_SHORT).show();
+                PromptForMSVFileSelection(v.getContext());
+                //packageToTak();
             }
         });
     }
@@ -213,25 +235,147 @@ public class LinguaLinkLedger implements IPlugin {
     }
 
     private void createOrEditDatapackage() {
-        MapView mapView = MapView.getMapView();
-        MissionPackageExportMarshal missionPackageExportMarshal = new MissionPackageExportMarshal(mapView.getContext(), true);
-        List<Exportable> exportables = new ArrayList<>();
-        exportables.add(new Exportable() {
-            @Override
-            public boolean isSupported(Class<?> aClass) {
-                return true;
-            }
+        showMetadataFormDialog();
+    }
 
+    private void showMetadataFormDialog() {
+        LayoutInflater inflater = (LayoutInflater) pluginContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View dialogView = inflater.inflate(R.layout.metadata_form, null);
+
+        // Get references to form fields
+        final EditText packageNameField = dialogView.findViewById(R.id.metadata_package_name);
+        final EditText descriptionField = dialogView.findViewById(R.id.metadata_description);
+        final EditText authorField = dialogView.findViewById(R.id.metadata_author);
+        final EditText latitudeField = dialogView.findViewById(R.id.metadata_latitude);
+        final EditText longitudeField = dialogView.findViewById(R.id.metadata_longitude);
+
+        // Get current map center and prefill lat/lon
+        MapView mapView = MapView.getMapView();
+        if (mapView != null) {
+            com.atakmap.coremap.maps.coords.GeoPointMetaData centerPointMeta = mapView.getPoint();
+            if (centerPointMeta != null) {
+                com.atakmap.coremap.maps.coords.GeoPoint centerPoint = centerPointMeta.get();
+                if (centerPoint != null) {
+                    latitudeField.setText(String.format("%.6f", centerPoint.getLatitude()));
+                    longitudeField.setText(String.format("%.6f", centerPoint.getLongitude()));
+                }
+            }
+        }
+
+
+        // Create dialog
+        final AlertDialog dialog = new AlertDialog.Builder(getMapView().getContext())
+                .setView(dialogView)
+                .create();
+
+        // Set up button listeners
+        Button cancelButton = dialogView.findViewById(R.id.metadata_cancel_button);
+        Button createButton = dialogView.findViewById(R.id.metadata_create_button);
+
+        cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public Object toObjectOf(Class<?> aClass, ExportFilters exportFilters) throws FormatNotSupportedException {
-                return new MissionPackageExportWrapper(false, "/sdcard/atak/support/support.inf");
+            public void onClick(View v) {
+                dialog.dismiss();
             }
         });
+
+        createButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Collect metadata
+                String packageName = packageNameField.getText().toString().trim();
+                String description = descriptionField.getText().toString().trim();
+                String author = authorField.getText().toString().trim();
+
+                // Get lat/lon values
+                double latitude = 0.0;
+                double longitude = 0.0;
+                try {
+                    latitude = Double.parseDouble(latitudeField.getText().toString().trim());
+                    longitude = Double.parseDouble(longitudeField.getText().toString().trim());
+                } catch (NumberFormatException e) {
+                    Toast.makeText(pluginContext, "Invalid latitude or longitude", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // Validate required fields
+                if (packageName.isEmpty()) {
+                    Toast.makeText(pluginContext, "Package name is required", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // Create metadata object
+                DataPackageMetadata metadata = new DataPackageMetadata(
+                        packageName, description, author, latitude, longitude);
+
+                // Close dialog
+                dialog.dismiss();
+
+                // Create the data package with metadata
+                createDataPackageWithMetadata(metadata);
+            }
+        });
+
+        dialog.show();
+    }
+
+    private void createDataPackageWithMetadata(DataPackageMetadata metadata) {
+        MapView mapView = MapView.getMapView();
+
         try {
+            // Create a metadata file
+            File metadataFile = createMetadataFile(metadata);
+
+            // Create the mission package export marshal
+            MissionPackageExportMarshal missionPackageExportMarshal =
+                    new MissionPackageExportMarshal(mapView.getContext(), true);
+
+            List<Exportable> exportables = new ArrayList<>();
+
+            // Add your metadata as part of the exportables
+            exportables.add(new Exportable() {
+                @Override
+                public boolean isSupported(Class<?> aClass) {
+                    return true;
+                }
+
+                @Override
+                public Object toObjectOf(Class<?> aClass, ExportFilters exportFilters)
+                        throws FormatNotSupportedException {
+                    // Use the metadata in the mission package
+                    return new MissionPackageExportWrapper(false, metadataFile.getAbsolutePath());
+                }
+            });
+
             missionPackageExportMarshal.execute(exportables);
+
+            Toast.makeText(pluginContext,
+                    "Data package '" + metadata.packageName + "' created successfully",
+                    Toast.LENGTH_LONG).show();
+
         } catch (Exception e) {
-            Log.d(TAG, "Error building a new datapackage with exportables: " + exportables, e);
+            Log.e(TAG, "Error creating data package with metadata", e);
+            Toast.makeText(pluginContext,
+                    "Error creating data package: " + e.getMessage(),
+                    Toast.LENGTH_LONG).show();
         }
+    }
+
+    private File createMetadataFile(DataPackageMetadata metadata) throws IOException {
+        // Create a metadata file in the tools directory
+        File metadataFile = new File(TOOLS_DIR, metadata.packageName + "_metadata.txt");
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(metadataFile))) {
+            writer.write("Package Name: " + metadata.packageName + "\n");
+            writer.write("Description: " + metadata.description + "\n");
+            writer.write("Author: " + metadata.author + "\n");
+            writer.write("Latitude: " + metadata.latitude + "\n");
+            writer.write("Longitude: " + metadata.longitude + "\n");
+            writer.write("Created: " + new java.util.Date().toString() + "\n");
+        }
+
+        Log.d(TAG, "Metadata file created: " + metadataFile.getAbsolutePath());
+        return metadataFile;
     }
 
     // Create all of the date package storage directories that are used.
@@ -320,7 +464,16 @@ public class LinguaLinkLedger implements IPlugin {
                         e.printStackTrace();
                     }
                     if (fileHash != null) {
-                        showHashPopup(fingerprintButton, fileHash); // Method to show the hash value in a popup
+                        final PopupWindow hashPopup = showHashPopup(sendButton, fileHash); // Method to show the hash value in a popup
+                        sendButton.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (hashPopup != null && hashPopup.isShowing()) {
+                                    hashPopup.dismiss();
+                                }
+                                packageToTak();
+                            }
+                        }, 2000);
                     } else {
                         Toast.makeText(pluginContext, "Failed to generate hash", Toast.LENGTH_SHORT).show();
                     }
@@ -335,7 +488,7 @@ public class LinguaLinkLedger implements IPlugin {
     }
 
 
-    private void showHashPopup(View anchorView, String hashValue) {
+    private PopupWindow showHashPopup(View anchorView, String hashValue) {
         LayoutInflater inflater = (LayoutInflater) pluginContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View popupView = inflater.inflate(R.layout.popup_hash_value, null);
 
@@ -346,6 +499,7 @@ public class LinguaLinkLedger implements IPlugin {
                 WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT, true);
 
         popupWindow.showAtLocation(anchorView.getRootView(), Gravity.CENTER, 0, 0);
+        return popupWindow;
     }
 
     private String generateFileHash(String filePath) {
