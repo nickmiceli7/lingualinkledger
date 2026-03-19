@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -26,16 +27,6 @@
                 android:text="@string/app_name" />
 
             <Button
-                android:id="@+id/health_check_button"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:text="⛓"
-                android:textSize="16sp"
-                android:textColor="@color/white"
-                android:background="@drawable/help_button_bg"
-                android:layout_marginRight="8dp" />
-
-            <Button
                 android:id="@+id/help_button"
                 android:layout_width="32dp"
                 android:layout_height="32dp"
@@ -43,7 +34,8 @@
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:textColor="@color/white"
-                android:background="@drawable/help_button_bg" />
+                android:background="@drawable/help_button_bg"
+                android:layout_marginLeft="8dp" />
 
         </LinearLayout>
 
@@ -53,22 +45,6 @@
             android:layout_height="48dp"
             android:layout_marginBottom="12dp"
             android:text="Create/Edit Data Package"
-            style="@style/darkButton" />
-
-        <Button
-            android:id="@+id/create_evidence_trace_button"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginBottom="12dp"
-            android:text="Create Evidence Trace"
-            style="@style/darkButton" />
-
-        <Button
-            android:id="@+id/sign_evidence_trace_button"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginBottom="12dp"
-            android:text="Sign Evidence Trace"
             style="@style/darkButton" />
 
         <Button
