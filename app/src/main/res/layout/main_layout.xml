@@ -51,15 +51,7 @@
             android:id="@+id/send_dp_button"
             android:layout_width="match_parent"
             android:layout_height="48dp"
-            android:layout_marginBottom="12dp"
             android:text="Send Data Package"
-            style="@style/darkButton" />
-
-        <Button
-            android:id="@+id/sign_record_button"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="Sign Record"
             style="@style/darkButton" />
 
     </LinearLayout>
